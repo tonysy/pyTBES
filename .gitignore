@@ -18,7 +18,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
+lib/im2col_/
 lib64/
 parts/
 sdist/
