@@ -2,7 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
 dataset/
+tbes_1.0/
+
 # C extensions
 *.so
 
