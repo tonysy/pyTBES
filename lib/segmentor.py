@@ -1,8 +1,9 @@
 import numpy as np 
 from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
-
 from lib.im2col import im2col
 from sklearn.decomposition import PCA 
+from lib.chain_code import ChainCode
+
 pca = PCA(n_components=8)
 
 class Segmentor(object):
@@ -27,7 +28,8 @@ class Segmentor(object):
                                  0.002890183173518,
                                  0.030969517355864,
                                  0.169119902555616]
-                        
+        
+        self.chain_coder = ChainCode(self.image_super)
         # import pdb; pdb.set_trace()
 
 
@@ -45,17 +47,20 @@ class Segmentor(object):
         region_dict = {}
 
         for item in self.num_region:
-            positions = np.argwhere(self.super_flatten==item)
+            positions = np.where(self.super_flatten==item)
             region_dict[item] = positions
 
         return region_dict
-    def get_texture_len(self, id_key, kernel):
+    
+    # def get_edge_location(self):
+
+    def get_texture_len(self, region_id, kernel):
         """
         Use equation(4) to calculate the coding length
         Attention: For easy to implement, we just use features of all pixel in a region, not chooese the nonoverlapping window.
         
         Args:
-            id_key: 
+            region_id: 
                 denotes for the index of the region of an image
             kernel:
                 size of the window(e.g. 1, 3, 5 and 7)
@@ -63,17 +68,16 @@ class Segmentor(object):
             length:
                 coding length of one region under a window size
         """
-        region_ids = self.region_dict[id_key]
-        N = region_ids.shape[0] # number of pixel in a region
-        region_feature = self.feature_dict[kernel][region_ids].squeeze()
+        region_pixels = self.region_dict[region_id]
+        N = region_pixels[0].shape[0] # number of pixel in a region
+        region_feature = self.feature_dict[kernel][region_pixels]#.squeeze()
+        import pdb ; pdb.set_trace()
         region_mean = np.mean(region_feature, axis=0)
         region_cov = np.cov(region_feature.transpose(1,0))
         mean_term = self.D / 2 * np.log2(1 + \
                     np.linalg.norm(region_mean)**2 \
                     / self.distortion**2)
-
         # first_term = (float(self.D) / 2  +  N/(2*kernel*kernel))*np.log2(np.linalg.det(1+float(self.D)*region_cov/(float(self.distortion)**2)))
-
         # TODO: Check why error if use np.linalg.det
         first_term = (float(self.D) / 2  +  N/(2*kernel*kernel))*np.sum(np.log2(1+ float(self.D)/(self.distortion**2)*np.linalg.svd(region_cov)[1]))
 
@@ -81,13 +85,13 @@ class Segmentor(object):
         assert length > 0
 
         # import pdb; pdb.set_trace()
-
         return length
+
     def get_boundary_len(self):
-        
-    
+        pass
+
     def get_difference_chain_code(self):
-        
+        pass
     def get_pixel_feature(self):
         """
         Get Texture image feature for each image

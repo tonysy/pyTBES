@@ -18,24 +18,50 @@ bcd500_loader = Dataloader(data_dir='./dataset/BSR')
 train_image = bcd500_loader.get_image(mode='train')
 
 segmentor = Segmentor(train_image[0])
-segmentor.get_texture_len(10,1)
+segmentor.get_texture_len(region_id=0, kernel=1)
 
+segmentor.chain_coder.get_region_edge(region_id=0)
 import pdb ; pdb.set_trace()
 
-segments_slic = slic(train_image[1], n_segments=100, compactness=10, sigma=1)
-
 vis = visdom.Visdom(env='TBES_Visual_Results')
-print('SLIC number of segments: {}'.format(len(np.unique(segments_slic))))
-# import time
-# s = time.time()
+# print('SLIC number of segments: {}'.format(len(np.unique(segments_slic))))
 
-feature = get_text_future(train_image[1])
-# print(time.time()-s)
-plt.imshow(mark_boundaries(train_image[1], segments_slic))
-
+# plot superpixel
 if vis.win_exists('slic_superpixels_results'):
     vis.close(win='slic_superpixels_results')
     assert not vis.win_exists('slic_superpixels_results'), 'Closed window still exists'
+# import pdb ; pdb.set_trace()
+
+vis.image(mark_boundaries(segmentor.image_data, \
+                        segmentor.image_super).transpose(2,0,1), \
+                        win='slic_superpixels_results')
+
+boundary = segmentor.chain_coder.boundary
+boundary *= 200
+if vis.win_exists('slic_superpixels_boundary'):
+    vis.close(win='slic_superpixels_boundary')
+    assert not vis.win_exists('slic_superpixels_boundary'), 'Closed window still exists'
+vis.image(boundary,\
+            win='slic_superpixels_boundary')
+
+if vis.win_exists('slic_superpixels_boundary_edge'):
+    vis.close(win='slic_superpixels_boundary_edge')
+    assert not vis.win_exists('slic_superpixels_boundary_edge'), 'Closed window still exists'
+# boundary_edge = segmentor.chain_coder.boundary_edge
+# boundary_edge *= 10
+# plt.imshow(boundary_edge)
+
+# vis.matplot(plt,\
+#             win='slic_superpixels_boundary_edge')
+# vis.image(boundary_edge,\
+            # win='slic_superpixels_boundary_edge')
+
+# plt.imshow(mark_boundaries(train_image[1], segments_slic))
+
+import pdb ; pdb.set_trace()
+
+# print(time.time()-s)
+
 
 vis.matplot(plt, win='slic_superpixels_results')
 
