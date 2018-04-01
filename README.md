@@ -1,4 +1,5 @@
-# Texture and Boundary Encoding-based Sementation 
+# TBES-python
+Texture and Boundary Encoding-based Segmentation
 
 ## Dataset
 
@@ -9,3 +10,4 @@ http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/BSR/BSR_bsds50
 ## Method
 ### Superpixel
 I use SLIC method from skimage lib to get superpixel of image
+
