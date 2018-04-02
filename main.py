@@ -18,10 +18,25 @@ bcd500_loader = Dataloader(data_dir='./dataset/BSR')
 train_image = bcd500_loader.get_image(mode='train')
 
 segmentor = Segmentor(train_image[0])
-segmentor.get_texture_len(region_id=0, kernel=1)
+# segmentor.get_texture_len(region_id=10, kernel=1)
+# segmentor.get_boundary_len(region_id=10)
 
-segmentor.chain_coder.get_region_edge(region_id=0)
+# single_total_len = segmentor.get_total_length_single(kernel=7)
+# print('Total Length:', single_total_len)
+region_adjacency, _ = segmentor.get_region_adjacency_matrix()
+for item in region_adjacency[1]:
+    region_diff_len = segmentor.get_region_difference(1, item, kernel=5)
+    print('Item:', item, region_diff_len)
+
 import pdb ; pdb.set_trace()
+boundary_coordinate = segmentor.chain_coder.get_region_edge(region_id=0)
+
+# boundary_plot = segmentor.chain_coder.boundary_plot 
+# for item in boundary_coordinate:
+    # boundary_plot[item]=1
+
+# boundary_plot *= 100
+
 
 vis = visdom.Visdom(env='TBES_Visual_Results')
 # print('SLIC number of segments: {}'.format(len(np.unique(segments_slic))))
@@ -49,15 +64,32 @@ if vis.win_exists('slic_superpixels_boundary_edge'):
     assert not vis.win_exists('slic_superpixels_boundary_edge'), 'Closed window still exists'
 # boundary_edge = segmentor.chain_coder.boundary_edge
 # boundary_edge *= 10
-# plt.imshow(boundary_edge)
+# plt.imshow(boundary_plot)
 
+# plt.plot(boundary_coordinate[:,0],boundary_coordinate[:,1],'x')
 # vis.matplot(plt,\
-#             win='slic_superpixels_boundary_edge')
-# vis.image(boundary_edge,\
             # win='slic_superpixels_boundary_edge')
+# boundary_plot = mark_boundaries(segmentor.image_data,segmentor.chain_coder.boundary_plot)
+vis.image(segmentor.chain_coder.boundary_plot*100,\
+            win='slic_superpixels_boundary_edge')
 
+
+
+if vis.win_exists('slic_superpixels_region'):
+    vis.close(win='slic_superpixels_region')
+    assert not vis.win_exists('slic_superpixels_region'), 'Closed window still exists'
+# boundary_edge = segmentor.chain_coder.boundary_edge
+# boundary_edge *= 10
+# plt.imshow(boundary_plot)
+
+# plt.plot(boundary_coordinate[:,0],boundary_coordinate[:,1],'x')
+# vis.matplot(plt,\
+            # win='slic_superpixels_boundary_edge')
+vis.image(segmentor.chain_coder.region_plot*100,\
+            win='slic_superpixels_region')
 # plt.imshow(mark_boundaries(train_image[1], segments_slic))
 
+# boundary_path = segmentor.chain_coder.chain_code(boundary_coordinate)
 import pdb ; pdb.set_trace()
 
 # print(time.time()-s)
