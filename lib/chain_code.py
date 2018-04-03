@@ -159,9 +159,13 @@ class ChainCode(object):
             region_id:
                 region label in superpixels
         """
+
         region_initial = np.zeros((self.height,self.width))
         region_initial[boundary_region_index]=1
-        region_boundary_mask = find_boundaries(self.superpixel, mode='inner',background=0).astype(np.uint8)
+        region_boundary_mask = find_boundaries(region_initial, mode='inner',background=0).astype(np.uint8)
+        self.region_boundary_mask = region_boundary_mask
+        # return 1
+        # import pdb ; pdb.set_trace()
 
         # step-3: get all pixels index of a region for mapping
         # region_pixels_loc = np.argwhere(self.superpixel==region_id)        

@@ -171,7 +171,7 @@ class Segmentor(object):
 
         self.region_adjacency_dict = region_adjacency_dict 
         self.region_adjacency_matrix = region_adjacency_matrix
-
+        return region_adjacency_dict, region_adjacency_matrix
 
     def get_region_difference(self, region_id_a, region_id_b,kernel):
         texture_region_index_a, \
@@ -208,6 +208,7 @@ class Segmentor(object):
                                         boundary_region_index_b[0])),
                                np.hstack((boundary_region_index_a[1],
                                         boundary_region_index_b[1])),)
+        # import pdb ; pdb.set_trace()
         return boundary_region_index_a,\
                boundary_region_index_b, \
                merge_boundary_region
@@ -221,7 +222,31 @@ class Segmentor(object):
                merge_texture_region
 
     def optimize_segmentation(self):
-        pass
-    def update_new_superpixel(self):
-        pass
+        
+        while True:
+            kernel = 7
+            region_diff_len = 
+            merge_region_id = []
+            adjacency_region_list = np.argwhere(self.region_adjacency_matrix==1)
+            for item in self.region_adjacency_matrix:
+                region_id_a, region_id_b = item
+                region_diff_len = self.get_region_difference(region_id_a, region_id_b, kernel)
+                # todo: check interior
+                if region_diff_len_largest < region_diff_len:
+                    region_diff_len_largest = region_diff_len
+                    merge_region_id = (region_id_a, region_id_b)
+
+            # all diff_len of adjacency region less than 0, exited. 
+            if region_diff_len_largest = 0:
+                break
             
+
+            # for region_id in self.num_region:
+            #     adjacency_region = self.region_adjacency_dict[region_id]
+            #     for item in adjacency_region:
+            
+        # for kernel in [7,5,3,1]:
+                        
+
+    def update_new_superpixel(self, region_a, region_b):
+        pass

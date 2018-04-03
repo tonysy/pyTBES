@@ -13,19 +13,25 @@ from data.dataloader import Dataloader
 import matplotlib.pyplot as plt 
 # from lib.text_future import get_text_future
 from lib.segmentor import Segmentor
+vis = visdom.Visdom(env='TBES_Visual_Results_NEW')
 
 bcd500_loader = Dataloader(data_dir='./dataset/BSR')
 train_image = bcd500_loader.get_image(mode='train')
 
-segmentor = Segmentor(train_image[0])
-# segmentor.get_texture_len(region_id=10, kernel=1)
-# segmentor.get_boundary_len(region_id=10)
+segmentor = Segmentor(train_image[1])
+# vis.image(mark_boundaries(segmentor.image_data,segmentor.image_super).transpose(2,0,1))
 
-# single_total_len = segmentor.get_total_length_single(kernel=7)
-# print('Total Length:', single_total_len)
 region_adjacency, _ = segmentor.get_region_adjacency_matrix()
+
+# boundary_region_index = np.where(segmentor.image_super==1)
+# boundary_coordinate = segmentor.chain_coder.get_region_edge_v2(boundary_region_index)
+# vis.image(segmentor.chain_coder.region_boundary_mask*125)
+
 for item in region_adjacency[1]:
-    region_diff_len = segmentor.get_region_difference(1, item, kernel=5)
+    # boundary_region_index = np.where(segmentor.image_super==item)
+    # boundary_coordinate = segmentor.chain_coder.get_region_edge_v2    (boundary_region_index)
+    # vis.image(segmentor.chain_coder.region_boundary_mask*125)
+    region_diff_len = segmentor.get_region_difference(1, item, kernel=7)
     print('Item:', item, region_diff_len)
 
 import pdb ; pdb.set_trace()
