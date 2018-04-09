@@ -8,11 +8,15 @@ from lib.chain_code import ChainCode
 pca = PCA(n_components=8)
 
 class Segmentor(object):
-    def __init__(self, image, superpixel=slic, pca_dim = 8, epsilon=400):
+    def __init__(self, image, superpixel=slic, pca_dim = 8, epsilon=800):
         super(Segmentor, self).__init__()
         self.image_data = image
         self.image_super = superpixel(image, n_segments=100, \
                                         compactness=10, sigma=1)
+        self.num_region = np.unique(self.image_super)
+        
+        self.init_unique = len(np.unique(self.image_super))
+
         self.D = pca_dim
         self.distortion = epsilon
         self.kernel = 7 # size of window
@@ -51,7 +55,6 @@ class Segmentor(object):
             region_dict: dict
 
         """
-        self.num_region = np.unique(self.image_super)
         self.super_flatten = self.image_super.reshape(-1)
         region_dict = {}
 
@@ -148,8 +151,8 @@ class Segmentor(object):
         return single_total_length
 
     def get_region_adjacency_matrix(self):
-        region_adjacency_matrix = np.zeros((self.num_region.shape[0],\
-                                            self.num_region.shape[0]))
+        region_adjacency_matrix = np.zeros((self.init_unique,\
+                                            self.init_unique))
         region_adjacency_dict = {}
 
         for regin_id in self.num_region.tolist():
@@ -222,31 +225,43 @@ class Segmentor(object):
                merge_texture_region
 
     def optimize_segmentation(self):
-        
+        kernel = self.kernel
         while True:
-            kernel = 7
-            region_diff_len = 
-            merge_region_id = []
             adjacency_region_list = np.argwhere(self.region_adjacency_matrix==1)
-            for item in self.region_adjacency_matrix:
-                region_id_a, region_id_b = item
-                region_diff_len = self.get_region_difference(region_id_a, region_id_b, kernel)
-                # todo: check interior
-                if region_diff_len_largest < region_diff_len:
-                    region_diff_len_largest = region_diff_len
-                    merge_region_id = (region_id_a, region_id_b)
+            
 
-            # all diff_len of adjacency region less than 0, exited. 
-            if region_diff_len_largest = 0:
+            item_0 = adjacency_region_list[0]
+            len_max_item = item_0
+            region_diff_len_max = self.get_region_difference(item_0[0], item_0[1], kernel)
+
+            # get maximum len item
+            for item in adjacency_region_list:
+                region_diff_len = self.get_region_difference(item[0], item[1], kernel)
+                if region_diff_len > region_diff_len_max:
+                    print('---New Largest Length:{}--------'.format(region_diff_len))
+                    len_max_item = item
+                    region_diff_len_max = region_diff_len
+
+            if region_diff_len_max > 0:
+                print('Prepare to Merge')
+                # update superpixel
+                self.merge_region(len_max_item[0],len_max_item[1])
+                
+            elif region_diff_len_max <=0 and kernel != 1:
+
+                kernel = kernel - 2
+            else: #if kernel == 1 && region_diff_len_max <= 0:
                 break
-            
-
-            # for region_id in self.num_region:
-            #     adjacency_region = self.region_adjacency_dict[region_id]
-            #     for item in adjacency_region:
-            
-        # for kernel in [7,5,3,1]:
-                        
-
-    def update_new_superpixel(self, region_a, region_b):
-        pass
+        print('Merge Complete!')
+        # import pdb ; pdb.set_trace()
+                
+    def merge_region(self, region_a, region_b):
+        num_unique = len(np.unique(self.image_super))
+        index_region_b = np.where(self.image_super==region_b)
+        self.image_super[index_region_b] = region_a
+        assert num_unique == len(np.unique(self.image_super))+1
+        
+        # Update region dict
+        self.region_dict = self.get_region_dict()
+        self.num_region = np.unique(self.image_super)
+        self.get_region_adjacency_matrix()

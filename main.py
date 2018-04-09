@@ -18,10 +18,13 @@ vis = visdom.Visdom(env='TBES_Visual_Results_NEW')
 bcd500_loader = Dataloader(data_dir='./dataset/BSR')
 train_image = bcd500_loader.get_image(mode='train')
 
-segmentor = Segmentor(train_image[1])
-# vis.image(mark_boundaries(segmentor.image_data,segmentor.image_super).transpose(2,0,1))
+segmentor = Segmentor(train_image[2])
+vis.image(mark_boundaries(segmentor.image_data,segmentor.image_super).transpose(2,0,1))
 
 region_adjacency, _ = segmentor.get_region_adjacency_matrix()
+segmentor.optimize_segmentation()
+vis.image(mark_boundaries(segmentor.image_data,segmentor.image_super).transpose(2,0,1))
+import pdb ; pdb.set_trace()
 
 # boundary_region_index = np.where(segmentor.image_super==1)
 # boundary_coordinate = segmentor.chain_coder.get_region_edge_v2(boundary_region_index)
