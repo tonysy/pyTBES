@@ -8,7 +8,7 @@ from lib.chain_code import ChainCode
 pca = PCA(n_components=8)
 
 class Segmentor(object):
-    def __init__(self, image, superpixel=slic, pca_dim = 8, epsilon=800):
+    def __init__(self, image, superpixel=slic, pca_dim = 8, epsilon=50):
         super(Segmentor, self).__init__()
         self.image_data = image
         self.image_super = superpixel(image, n_segments=100, \
@@ -110,12 +110,16 @@ class Segmentor(object):
         # import pdb ; pdb.set_trace()
         return boundary_length
 
+    def get_boundary_len_simp(self, boundary_region_index):
+        boundary_coordinate = self.chain_coder.get_region_edge(boundary_region_index)
+        boundary_len = 3.0*sum(self.prob_chain_code)*boundary_coordinate.shape[0]/8.0
+        return boundary_len
+
     def get_diff_chain_code(self, boundary_region_index):
         
-        boundary_coordinate = self.chain_coder.get_region_edge_v2(boundary_region_index)
-
+        boundary_coordinate = self.chain_coder.get_region_edge(boundary_region_index)
+        # import pdb ; pdb.set_trace()
         freeman_chain_code = self.chain_coder.get_chain_code(boundary_coordinate)
-        
         diff_chain_code = self.chain_coder.get_diff_chain_code(freeman_chain_code)
         print('Boundary_coordinate Size:', boundary_coordinate.shape[0])
         print('Chain Code Size:', len(diff_chain_code))
@@ -188,18 +192,18 @@ class Segmentor(object):
                                                 kernel=kernel)
 
 
-        # boundary_region_index_a, \
-        # boundary_region_index_b, \
-        # merge_boundary_region = self.boundary_region_merge(region_id_a, region_id_b)
+        boundary_region_index_a, \
+        boundary_region_index_b, \
+        merge_boundary_region = self.boundary_region_merge(region_id_a, region_id_b)
 
-        # boundary_len_a = self.get_boundary_len(boundary_region_index_a)
-        # boundary_len_b = self.get_boundary_len(boundary_region_index_b)
-        # merge_boundary_len = self.get_boundary_len(merge_boundary_region)
+        boundary_len_a = self.get_boundary_len_simp(boundary_region_index_a)
+        boundary_len_b = self.get_boundary_len_simp(boundary_region_index_b)
+        merge_boundary_len = self.get_boundary_len_simp(merge_boundary_region)
 
         region_diff_len = texture_len_a + texture_len_b \
                             - merge_texture_len \
-                            # + 0.5*(boundary_len_a + \
-                            # boundary_len_b - merge_boundary_len)
+                            + 0.5*(boundary_len_a + \
+                            boundary_len_b - merge_boundary_len)
 
         return region_diff_len
 
@@ -265,3 +269,4 @@ class Segmentor(object):
         self.region_dict = self.get_region_dict()
         self.num_region = np.unique(self.image_super)
         self.get_region_adjacency_matrix()
+        self.chain_coder = ChainCode(self.image_super)

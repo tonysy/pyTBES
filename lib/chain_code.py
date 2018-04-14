@@ -112,7 +112,7 @@ class ChainCode(object):
         return diff_chain_code
 
     
-    def get_region_edge(self, region_id):
+    def get_region_edge(self, boundary_region_index):
         """
         Args:
             region_id:
@@ -121,11 +121,11 @@ class ChainCode(object):
                 
         # step-1: get all pixels index of a region from superpixel, 
         # for generate boundary mask
-        region_pixels_index = np.where(self.superpixel==region_id)
+        region_pixels_index = boundary_region_index
         
         # step-2: get region boundary mask
-        region_boundary_mask = self.boundary_filledge[region_pixels_index]
-        # region_boundary_mask = self.boundary[region_pixels_index]
+        # region_boundary_mask = self.boundary_filledge[region_pixels_index]
+        region_boundary_mask = self.boundary[region_pixels_index]
         
         # step-3: get all pixels index of a region for mapping
         # region_pixels_loc = np.argwhere(self.superpixel==region_id)        
@@ -149,7 +149,7 @@ class ChainCode(object):
         # self.boundary_plot[(boundary_coordinate[:,0],boundary_coordinate[:,1])] = 1
 
         self.region_plot = np.zeros((self.height,self.width))
-        self.region_plot[np.where(self.superpixel==region_id)]=1
+        self.region_plot[boundary_region_index]=1
 
         return boundary_coordinate
 
@@ -302,3 +302,88 @@ class ChainCode(object):
         neighbors_dict[15][1] -= distance  # width
 
         return neighbors_dict
+    
+    def chaincode(self, b, unwrap=False):
+        '''
+        Returns Freeman chain code 8-connected representation of a boundary.
+        Parameters
+        ----------
+        b : Nx2 int array
+        Boundary given as array of (y,x) pixel coordinates.
+        unwrap  - (optional, default=false) unwrap code
+                    if enable phase inversions are eliminated
+        Returns
+        -------
+        cc : list
+            8-connected Freeman chain code of length N (close boundary), or N-1 (open
+            boundary).
+        (x0, y0) : tuple of ints
+            Starting point.
+        ucode : list
+            Unwrapped 8-connected Freeman chain code (if requested)
+        Returns (cc, (x0, y0)) or (cc, (x0, y0), ucode) if unwrap is True.
+        Notes
+        -----
+        Direction-to-code convention:
+            --------------------------
+            | deltax | deltay | code |
+            |------------------------|    y
+            |    0   |   +1   |   2  |    ^     3  2  1
+            |    0   |   -1   |   6  |    |      \ | /
+            |   -1   |   +1   |   3  |    |   4 -- P -- 0
+            |   -1   |   -1   |   5  |    |      / | \\
+            |   +1   |   +1   |   1  |    |     5  6  7
+            |   +1   |   -1   |   7  |    |
+            |   -1   |    0   |   4  |    +-------------> x
+            |   +1   |    0   |   0  |
+            --------------------------
+        '''
+
+        # compute dx,dy by a circular shift on coords arrays by 1 element
+        delta = np.zeros(b.shape, dtype=int)
+        delta[:-1, :] = b[1:, :] - b[:-1, :]
+        delta[-1, :] = b[0, :] - b[-1, :]
+
+        # check if boundary is 8-connected
+        if ((np.abs(delta[:, 0]) > 1) + (np.abs(delta[:, 1]) > 1)).any():
+            raise ValueError('Curve is not 8-connected.')
+
+        # check if boundary is close, if so cut last element
+        if (np.abs(delta[-1, :]) == 0).all():
+            delta = delta[:-1, :]
+
+        if ((np.abs(delta[:, 0]) == 0) * (np.abs(delta[:, 1]) == 0)).any():
+            raise ValueError('Curve is degenerate.')
+
+        # Take dy, dx to be a two-digit base-3 number (after adding one to both dy, dx),
+        # and use this as an index into the following map:
+        #   --------------------------------------
+        #   | deltax | deltay | code | (base-3)+1 |
+        #   |-------------------------------------|
+        #   |    0   |   +1   |   2  |      8     |
+        #   |    0   |   -1   |   6  |      2     |
+        #   |   -1   |   +1   |   3  |      7     |
+        #   |   -1   |   -1   |   5  |      1     |
+        #   |   +1   |   +1   |   1  |      9     |
+        #   |   +1   |   -1   |   7  |      3     |
+        #   |   -1   |    0   |   4  |      4     |
+        #   |   +1   |    0   |   0  |      6     |
+        #   ---------------------------------------
+        #
+        idx = 3 * delta[:, 0] + delta[:, 1] + 4
+        cm = np.array([5, 6, 7, 4, -1, 0, 3, 2, 1])
+        cc = cm[idx]
+
+        if unwrap:
+            #
+            # unwrapped_0 = cc_0
+            # unwrapped_k = argmin_{u \in Z} |u - unwrapped_{k-1}|
+            #       subject to:
+            #               unwrapped_k - cc_k = 0 (mod 8)
+            #
+            ucc = cc.copy()
+            for i in range(1, ucc.shape[0]):
+                ucc[i] += 8*np.round((ucc[i-1] - cc[i])/8.)
+            return cc, b[0, :], ucc
+        else:
+            return cc, b[0, :]
