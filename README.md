@@ -18,3 +18,7 @@ I use SLIC method from skimage lib to get superpixel of image
 
 ### Run for segmentation
 `python main.py`
+
+## Todo
+- [ ] Add support for non-overlapping
+- [ ] Add metric measurement
